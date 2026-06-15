@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Briva - Login</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: #fff; color: #2c2c2c; }
+        header { text-align: center; padding: 30px; border-bottom: 1px solid #ddd; letter-spacing: 6px; font-size: 2rem; font-weight: bold; }
+        .main { display: flex; justify-content: center; align-items: flex-start; gap: 60px; padding: 60px 100px; }
+        .left, .right { flex: 1; max-width: 400px; }
+        h2 { font-size: 1.1rem; letter-spacing: 2px; margin-bottom: 25px; text-transform: uppercase; }
+        label { font-size: 0.85rem; display: block; margin-bottom: 6px; color: #555; }
+        input { width: 100%; padding: 10px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 0.95rem; margin-bottom: 18px; outline: none; }
+        input:focus { border-color: #2c2c2c; }
+        button { padding: 12px 28px; background: #2c2c2c; color: white; border: none; border-radius: 4px; font-size: 0.9rem; letter-spacing: 1px; cursor: pointer; }
+        button:hover { background: #444; }
+        .divider { width: 1px; background: #ddd; align-self: stretch; }
+        .right { background: #f5f5f5; padding: 30px; border-radius: 6px; }
+        .right ul { margin: 15px 0 25px 20px; font-size: 0.9rem; color: #555; line-height: 2; }
+    </style>
+</head>
+<body>
+<header>BRIVA</header>
+<div class="main">
+    <div class="left">
+        <h2>Iniciar Sesión</h2>
+        <form action="LoginServlet" method="post">
+            <label>Usuario:</label>
+            <input type="text" name="username" placeholder="Tu usuario" required/>
+            <label>Contraseña:</label>
+            <input type="password" name="password" placeholder="Tu contraseña" required/>
+            <button type="submit">Iniciar sesión</button>
+        </form>
+    </div>
+    <div class="divider"></div>
+    <div class="right">
+        <h2>¿Nuevo cliente?</h2>
+        <p style="font-size:0.9rem; color:#555;">Crea una cuenta con nosotros y podrás:</p>
+        <ul>
+            <li>Pagar más rápido</li>
+            <li>Guardar varias direcciones de envío</li>
+            <li>Acceder a tu historial de pedidos</li>
+            <li>Rastrear nuevos pedidos</li>
+            <li>Guardar artículos en tu lista de deseos</li>
+        </ul>
+        <button onclick="window.location.href='registro.html'">Crear cuenta</button>
+    </div>
+</div>
+</body>
+</html>
