@@ -13,8 +13,8 @@ import java.sql.ResultSet;
 
 public class LoginServlet extends HttpServlet {
 
-    private static final String DB_URL = "jdbc:sqlserver://localhost;databaseName=briva;encrypt=false;trustServerCertificate=true";    private static final String DB_USER = "sa";
-    private static final String DB_PASS = "BERE2107";
+    private static final String DB_URL = "jdbc:postgresql://thomas.proxy.rlwy.net:18148/railway";    private static final String DB_USER = "postgres";
+    private static final String DB_PASS = "HhbimfZDyhOLItCzMjsxwBFbjSZumdcD";
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
@@ -23,7 +23,7 @@ public class LoginServlet extends HttpServlet {
         String password = request.getParameter("password");
 
         try {
-            Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+            Class.forName("org.postgresql.Driver");
             Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASS);
 
             String sql = "SELECT * FROM usuarios WHERE username=? AND password=?";
