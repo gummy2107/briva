@@ -24,7 +24,6 @@ public class ProductoServlet extends HttpServlet {
             throws ServletException, IOException {
         String accion = request.getParameter("accion");
         if (accion == null) accion = "listar";
-
         switch (accion) {
             case "listar" -> listar(request, response);
             case "formAgregar" -> mostrarFormAgregar(response);
@@ -37,25 +36,19 @@ public class ProductoServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         String accion = request.getParameter("accion");
-        if ("agregar".equals(accion)) {
-            agregar(request, response);
-        } else if ("editar".equals(accion)) {
-            editar(request, response);
-        }
+        if ("agregar".equals(accion)) agregar(request, response);
+        else if ("editar".equals(accion)) editar(request, response);
     }
 
     private void listar(HttpServletRequest request, HttpServletResponse response) throws IOException {
         response.setContentType("text/html;charset=UTF-8");
         PrintWriter out = response.getWriter();
         printHeader(out, "Inventario");
-
         out.println("<div class='contenido'>");
         out.println("<div class='top'><h2>INVENTARIO</h2>");
         out.println("<a href='ProductoServlet?accion=formAgregar' class='btn-add'>+ Agregar producto</a></div>");
-
         out.println("<table>");
-        out.println("<tr><th>ID</th><th>Nombre</th><th>Talla</th><th>Color</th><th>Precio</th><th>Stock</th><th>Acciones</th></tr>");
-
+        out.println("<tr><th>ID</th><th>Nombre</th><th>Color</th><th>Precio</th><th>Tallas y Stock</th><th>Acciones</th></tr>");
         try {
             Connection conn = getConnection();
             PreparedStatement ps = conn.prepareStatement("SELECT * FROM productos ORDER BY id");
@@ -65,20 +58,27 @@ public class ProductoServlet extends HttpServlet {
                 out.println("<tr>");
                 out.println("<td>" + id + "</td>");
                 out.println("<td>" + rs.getString("nombre") + "</td>");
-                out.println("<td>" + rs.getString("talla") + "</td>");
                 out.println("<td>" + rs.getString("color") + "</td>");
                 out.println("<td>S/ " + rs.getDouble("precio") + "</td>");
-                out.println("<td>" + rs.getInt("stock") + "</td>");
+                // Tallas
+                PreparedStatement psTallas = conn.prepareStatement(
+                        "SELECT talla, stock FROM producto_tallas WHERE producto_id=? ORDER BY talla");
+                psTallas.setInt(1, id);
+                ResultSet rsTallas = psTallas.executeQuery();
+                StringBuilder tallas = new StringBuilder();
+                while (rsTallas.next()) {
+                    tallas.append(rsTallas.getString("talla")).append(": ").append(rsTallas.getInt("stock")).append(" | ");
+                }
+                out.println("<td>" + (tallas.length() > 0 ? tallas.substring(0, tallas.length()-3) : "-") + "</td>");
                 out.println("<td>");
                 out.println("<a href='ProductoServlet?accion=formEditar&id=" + id + "' class='btn-edit'>Editar</a> ");
-                out.println("<a href='ProductoServlet?accion=eliminar&id=" + id + "' class='btn-delete' onclick='return confirm(\"¿Eliminar?\")'>Eliminar</a>");
+                out.println("<a href='ProductoServlet?accion=eliminar&id=" + id + "' class='btn-delete' onclick='return confirm(\"Eliminar?\")'>Eliminar</a>");
                 out.println("</td></tr>");
             }
             conn.close();
         } catch (Exception e) {
-            out.println("<tr><td colspan='7'>Error: " + e.getMessage() + "</td></tr>");
+            out.println("<tr><td colspan='6'>Error: " + e.getMessage() + "</td></tr>");
         }
-
         out.println("</table></div>");
         printFooter(out);
     }
@@ -87,11 +87,21 @@ public class ProductoServlet extends HttpServlet {
         response.setContentType("text/html;charset=UTF-8");
         PrintWriter out = response.getWriter();
         printHeader(out, "Agregar Producto");
-        out.println("<div class='contenido'>");
-        out.println("<h2>AGREGAR PRODUCTO</h2>");
+        out.println("<div class='contenido'><h2>AGREGAR PRODUCTO</h2>");
         out.println("<form action='ProductoServlet' method='post'>");
         out.println("<input type='hidden' name='accion' value='agregar'/>");
-        printCampos(out, "", "", "", "", "");
+        out.println("<label>Nombre:</label><input type='text' name='nombre' required/>");
+        out.println("<label>Color:</label><input type='text' name='color' required/>");
+        out.println("<label>Precio (S/):</label><input type='number' name='precio' step='0.01' required/>");
+        out.println("<h3 style='margin-top:20px;letter-spacing:1px;font-size:0.95rem;'>TALLAS Y STOCK</h3>");
+        out.println("<div class='tallas-grid'>");
+        for (String t : new String[]{"XS","S","M","L","XL","XXL"}) {
+            out.println("<div class='talla-item'>");
+            out.println("<label><input type='checkbox' name='talla_check' value='" + t + "'/> " + t + "</label>");
+            out.println("<input type='number' name='stock_" + t + "' placeholder='Stock' min='0' value='0'/>");
+            out.println("</div>");
+        }
+        out.println("</div>");
         out.println("<button type='submit'>Guardar</button> ");
         out.println("<a href='ProductoServlet' class='btn-cancel'>Cancelar</a>");
         out.println("</form></div>");
@@ -109,14 +119,32 @@ public class ProductoServlet extends HttpServlet {
             ps.setInt(1, Integer.parseInt(id));
             ResultSet rs = ps.executeQuery();
             if (rs.next()) {
-                out.println("<div class='contenido'>");
-                out.println("<h2>EDITAR PRODUCTO</h2>");
+                out.println("<div class='contenido'><h2>EDITAR PRODUCTO</h2>");
                 out.println("<form action='ProductoServlet' method='post'>");
                 out.println("<input type='hidden' name='accion' value='editar'/>");
                 out.println("<input type='hidden' name='id' value='" + id + "'/>");
-                printCampos(out, rs.getString("nombre"), rs.getString("talla"),
-                        rs.getString("color"), String.valueOf(rs.getDouble("precio")),
-                        String.valueOf(rs.getInt("stock")));
+                out.println("<label>Nombre:</label><input type='text' name='nombre' value='" + rs.getString("nombre") + "' required/>");
+                out.println("<label>Color:</label><input type='text' name='color' value='" + rs.getString("color") + "' required/>");
+                out.println("<label>Precio (S/):</label><input type='number' name='precio' step='0.01' value='" + rs.getDouble("precio") + "' required/>");
+                out.println("<h3 style='margin-top:20px;letter-spacing:1px;font-size:0.95rem;'>TALLAS Y STOCK</h3>");
+                out.println("<div class='tallas-grid'>");
+
+                PreparedStatement psTallas = conn.prepareStatement(
+                        "SELECT talla, stock FROM producto_tallas WHERE producto_id=?");
+                psTallas.setInt(1, Integer.parseInt(id));
+                ResultSet rsTallas = psTallas.executeQuery();
+                java.util.Map<String, Integer> tallaMap = new java.util.HashMap<>();
+                while (rsTallas.next()) tallaMap.put(rsTallas.getString("talla"), rsTallas.getInt("stock"));
+
+                for (String t : new String[]{"XS","S","M","L","XL","XXL"}) {
+                    boolean checked = tallaMap.containsKey(t);
+                    int stock = checked ? tallaMap.get(t) : 0;
+                    out.println("<div class='talla-item'>");
+                    out.println("<label><input type='checkbox' name='talla_check' value='" + t + "'" + (checked?" checked":"") + "/> " + t + "</label>");
+                    out.println("<input type='number' name='stock_" + t + "' placeholder='Stock' min='0' value='" + stock + "'/>");
+                    out.println("</div>");
+                }
+                out.println("</div>");
                 out.println("<button type='submit'>Guardar</button> ");
                 out.println("<a href='ProductoServlet' class='btn-cancel'>Cancelar</a>");
                 out.println("</form></div>");
@@ -132,13 +160,27 @@ public class ProductoServlet extends HttpServlet {
         try {
             Connection conn = getConnection();
             PreparedStatement ps = conn.prepareStatement(
-                    "INSERT INTO productos (nombre, talla, color, precio, stock) VALUES (?,?,?,?,?)");
+                    "INSERT INTO productos (nombre, color, precio) VALUES (?,?,?) RETURNING id");
             ps.setString(1, request.getParameter("nombre"));
-            ps.setString(2, request.getParameter("talla"));
-            ps.setString(3, request.getParameter("color"));
-            ps.setDouble(4, Double.parseDouble(request.getParameter("precio")));
-            ps.setInt(5, Integer.parseInt(request.getParameter("stock")));
-            ps.executeUpdate();
+            ps.setString(2, request.getParameter("color"));
+            ps.setDouble(3, Double.parseDouble(request.getParameter("precio")));
+            ResultSet rs = ps.executeQuery();
+            rs.next();
+            int productoId = rs.getInt("id");
+
+            String[] tallas = request.getParameterValues("talla_check");
+            if (tallas != null) {
+                for (String t : tallas) {
+                    String stockStr = request.getParameter("stock_" + t);
+                    int stock = stockStr != null ? Integer.parseInt(stockStr) : 0;
+                    PreparedStatement psTalla = conn.prepareStatement(
+                            "INSERT INTO producto_tallas (producto_id, talla, stock) VALUES (?,?,?)");
+                    psTalla.setInt(1, productoId);
+                    psTalla.setString(2, t);
+                    psTalla.setInt(3, stock);
+                    psTalla.executeUpdate();
+                }
+            }
             conn.close();
         } catch (Exception e) {
             e.printStackTrace();
@@ -149,15 +191,33 @@ public class ProductoServlet extends HttpServlet {
     private void editar(HttpServletRequest request, HttpServletResponse response) throws IOException {
         try {
             Connection conn = getConnection();
+            int id = Integer.parseInt(request.getParameter("id"));
             PreparedStatement ps = conn.prepareStatement(
-                    "UPDATE productos SET nombre=?, talla=?, color=?, precio=?, stock=? WHERE id=?");
+                    "UPDATE productos SET nombre=?, color=?, precio=? WHERE id=?");
             ps.setString(1, request.getParameter("nombre"));
-            ps.setString(2, request.getParameter("talla"));
-            ps.setString(3, request.getParameter("color"));
-            ps.setDouble(4, Double.parseDouble(request.getParameter("precio")));
-            ps.setInt(5, Integer.parseInt(request.getParameter("stock")));
-            ps.setInt(6, Integer.parseInt(request.getParameter("id")));
+            ps.setString(2, request.getParameter("color"));
+            ps.setDouble(3, Double.parseDouble(request.getParameter("precio")));
+            ps.setInt(4, id);
             ps.executeUpdate();
+
+            PreparedStatement psDelete = conn.prepareStatement(
+                    "DELETE FROM producto_tallas WHERE producto_id=?");
+            psDelete.setInt(1, id);
+            psDelete.executeUpdate();
+
+            String[] tallas = request.getParameterValues("talla_check");
+            if (tallas != null) {
+                for (String t : tallas) {
+                    String stockStr = request.getParameter("stock_" + t);
+                    int stock = stockStr != null ? Integer.parseInt(stockStr) : 0;
+                    PreparedStatement psTalla = conn.prepareStatement(
+                            "INSERT INTO producto_tallas (producto_id, talla, stock) VALUES (?,?,?)");
+                    psTalla.setInt(1, id);
+                    psTalla.setString(2, t);
+                    psTalla.setInt(3, stock);
+                    psTalla.executeUpdate();
+                }
+            }
             conn.close();
         } catch (Exception e) {
             e.printStackTrace();
@@ -178,18 +238,6 @@ public class ProductoServlet extends HttpServlet {
         response.sendRedirect("ProductoServlet");
     }
 
-    private void printCampos(PrintWriter out, String nombre, String talla, String color, String precio, String stock) {
-        out.println("<label>Nombre:</label><input type='text' name='nombre' value='" + nombre + "' required/>");
-        out.println("<label>Talla:</label><select name='talla'>");
-        for (String t : new String[]{"XS","S","M","L","XL","XXL"}) {
-            out.println("<option value='" + t + "'" + (t.equals(talla) ? " selected" : "") + ">" + t + "</option>");
-        }
-        out.println("</select>");
-        out.println("<label>Color:</label><input type='text' name='color' value='" + color + "' required/>");
-        out.println("<label>Precio (S/):</label><input type='number' name='precio' step='0.01' value='" + precio + "' required/>");
-        out.println("<label>Stock:</label><input type='number' name='stock' value='" + stock + "' required/>");
-    }
-
     private void printHeader(PrintWriter out, String titulo) {
         out.println("<!DOCTYPE html><html lang='es'><head><meta charset='UTF-8'><title>Briva - " + titulo + "</title>");
         out.println("<style>");
@@ -198,7 +246,6 @@ public class ProductoServlet extends HttpServlet {
         out.println("header { background:#2c2c2c; color:white; text-align:center; padding:20px; letter-spacing:6px; font-size:1.8rem; }");
         out.println("nav { background:#444; padding:10px 30px; display:flex; gap:20px; }");
         out.println("nav a { color:white; text-decoration:none; font-size:0.9rem; letter-spacing:1px; }");
-        out.println("nav a:hover { text-decoration:underline; }");
         out.println(".contenido { padding:30px; }");
         out.println(".top { display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; }");
         out.println("h2 { letter-spacing:2px; font-size:1.1rem; }");
@@ -212,8 +259,12 @@ public class ProductoServlet extends HttpServlet {
         out.println(".btn-cancel { background:#888; color:white; padding:10px 20px; text-decoration:none; border-radius:4px; font-size:0.85rem; }");
         out.println("form { background:white; padding:30px; border-radius:8px; max-width:500px; box-shadow:0 2px 10px rgba(0,0,0,0.1); }");
         out.println("label { display:block; font-size:0.85rem; color:#555; margin-bottom:5px; margin-top:15px; }");
-        out.println("input, select { width:100%; padding:10px; border:1px solid #ccc; border-radius:4px; font-size:0.95rem; }");
-        out.println("button { margin-top:20px; padding:10px 25px; background:#2c2c2c; color:white; border:none; border-radius:4px; cursor:pointer; font-size:0.9rem; }");
+        out.println("input[type='text'], input[type='number'] { width:100%; padding:10px; border:1px solid #ccc; border-radius:4px; font-size:0.95rem; }");
+        out.println("button { margin-top:20px; padding:10px 25px; background:#2c2c2c; color:white; border:none; border-radius:4px; cursor:pointer; font-size:0.9rem; margin-right:10px; }");
+        out.println(".tallas-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:15px; margin-top:10px; }");
+        out.println(".talla-item { background:#f9f9f9; padding:10px; border-radius:6px; border:1px solid #eee; }");
+        out.println(".talla-item label { margin:0 0 5px 0; font-weight:bold; }");
+        out.println(".talla-item input[type='number'] { margin-top:5px; }");
         out.println("</style></head><body>");
         out.println("<header>BRIVA</header>");
         out.println("<nav>");
