@@ -3,9 +3,8 @@ WORKDIR /app
 COPY . .
 RUN mvn clean package -DskipTests
 
-FROM eclipse-temurin:21-jre
-WORKDIR /app
-COPY --from=build /app/target/briva.war /app/briva.war
-COPY --from=build /app/target/dependency/webapp-runner.jar /app/webapp-runner.jar
+FROM tomcat:10.1.24-jdk21
+RUN rm -rf /usr/local/tomcat/webapps/ROOT
+COPY --from=build /app/target/briva.war /usr/local/tomcat/webapps/ROOT.war
 EXPOSE 8080
-CMD ["java", "-jar", "webapp-runner.jar", "--port", "8080", "briva.war"]
+CMD ["catalina.sh", "run"]
