@@ -1,36 +1,75 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
+<web-app xmlns="http://jakarta.ee/xml/ns/jakartaee"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
+         xsi:schemaLocation="http://jakarta.ee/xml/ns/jakartaee https://jakarta.ee/xml/ns/jakartaee/web-app_5_0.xsd"
+         version="5.0"
+         metadata-complete="false">
+    <display-name>briva</display-name>
 
-    <groupId>com.briva</groupId>
-    <artifactId>briva</artifactId>
-    <version>1.0-SNAPSHOT</version>
-    <packaging>war</packaging>
+    <servlet>
+        <servlet-name>LoginServlet</servlet-name>
+        <servlet-class>com.briva.LoginServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>LoginServlet</servlet-name>
+        <url-pattern>/LoginServlet</url-pattern>
+    </servlet-mapping>
 
-    <properties>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
+    <servlet>
+        <servlet-name>RegistroServlet</servlet-name>
+        <servlet-class>com.briva.RegistroServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>RegistroServlet</servlet-name>
+        <url-pattern>/RegistroServlet</url-pattern>
+    </servlet-mapping>
 
-    <dependencies>
-        <dependency>
-            <groupId>jakarta.servlet</groupId>
-            <artifactId>jakarta.servlet-api</artifactId>
-            <version>6.0.0</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.postgresql</groupId>
-            <artifactId>postgresql</artifactId>
-            <version>42.7.3</version>
-        </dependency>
-    </dependencies>
+    <servlet>
+        <servlet-name>ProductoServlet</servlet-name>
+        <servlet-class>com.briva.ProductoServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ProductoServlet</servlet-name>
+        <url-pattern>/ProductoServlet</url-pattern>
+    </servlet-mapping>
 
-    <build>
-        <finalName>briva</finalName>
-    </build>
+    <servlet>
+        <servlet-name>CatalogoServlet</servlet-name>
+        <servlet-class>com.briva.CatalogoServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>CatalogoServlet</servlet-name>
+        <url-pattern>/CatalogoServlet</url-pattern>
+    </servlet-mapping>
 
-</project>
+    <servlet>
+        <servlet-name>CarritoServlet</servlet-name>
+        <servlet-class>com.briva.CarritoServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>CarritoServlet</servlet-name>
+        <url-pattern>/CarritoServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>PagoServlet</servlet-name>
+        <servlet-class>com.briva.PagoServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>PagoServlet</servlet-name>
+        <url-pattern>/PagoServlet</url-pattern>
+    </servlet-mapping>
+
+    <servlet>
+        <servlet-name>ConfirmacionServlet</servlet-name>
+        <servlet-class>com.briva.ConfirmacionServlet</servlet-class>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>ConfirmacionServlet</servlet-name>
+        <url-pattern>/ConfirmacionServlet</url-pattern>
+    </servlet-mapping>
+
+    <welcome-file-list>
+        <welcome-file>login.html</welcome-file>
+    </welcome-file-list>
+</web-app>
