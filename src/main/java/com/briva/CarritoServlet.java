@@ -31,16 +31,19 @@ public class CarritoServlet extends HttpServlet {
             return;
         }
 
-        Map<Integer, int[]> carrito = (Map<Integer, int[]>) session.getAttribute("carrito");
+        // Carrito: Map<"productoId_talla", [cantidad, productoId]>
+        Map<String, int[]> carrito = (Map<String, int[]>) session.getAttribute("carrito");
         if (carrito == null) carrito = new LinkedHashMap<>();
 
-        int productoId = Integer.parseInt(request.getParameter("productoId"));
+        String productoId = request.getParameter("productoId");
+        String talla = request.getParameter("talla");
         int cantidad = Integer.parseInt(request.getParameter("cantidad"));
+        String key = productoId + "_" + talla;
 
-        if (carrito.containsKey(productoId)) {
-            carrito.get(productoId)[0] += cantidad;
+        if (carrito.containsKey(key)) {
+            carrito.get(key)[0] += cantidad;
         } else {
-            carrito.put(productoId, new int[]{cantidad});
+            carrito.put(key, new int[]{cantidad, Integer.parseInt(productoId)});
         }
 
         session.setAttribute("carrito", carrito);
@@ -59,9 +62,9 @@ public class CarritoServlet extends HttpServlet {
 
         String accion = request.getParameter("accion");
         if ("eliminar".equals(accion)) {
-            Map<Integer, int[]> carrito = (Map<Integer, int[]>) session.getAttribute("carrito");
+            Map<String, int[]> carrito = (Map<String, int[]>) session.getAttribute("carrito");
             if (carrito != null) {
-                carrito.remove(Integer.parseInt(request.getParameter("id")));
+                carrito.remove(request.getParameter("key"));
                 session.setAttribute("carrito", carrito);
             }
             response.sendRedirect("CarritoServlet");
@@ -70,7 +73,7 @@ public class CarritoServlet extends HttpServlet {
 
         response.setContentType("text/html;charset=UTF-8");
         PrintWriter out = response.getWriter();
-        Map<Integer, int[]> carrito = (Map<Integer, int[]>) session.getAttribute("carrito");
+        Map<String, int[]> carrito = (Map<String, int[]>) session.getAttribute("carrito");
 
         out.println("<!DOCTYPE html><html lang='es'><head><meta charset='UTF-8'><title>Briva - Carrito</title>");
         out.println("<style>");
@@ -89,7 +92,6 @@ public class CarritoServlet extends HttpServlet {
         out.println(".btn-pagar { display:block; width:100%; padding:15px; background:#2c2c2c; color:white; border:none; border-radius:4px; font-size:1rem; cursor:pointer; letter-spacing:2px; text-align:center; text-decoration:none; }");
         out.println(".btn-pagar:hover { background:#444; }");
         out.println(".btn-delete { background:#c0392b; color:white; padding:5px 10px; text-decoration:none; border-radius:4px; font-size:0.8rem; }");
-        out.println(".btn-seguir { color:#2c2c2c; text-decoration:underline; font-size:0.85rem; }");
         out.println("</style></head><body>");
         out.println("<header>BRIVA</header>");
         out.println("<nav>");
@@ -101,27 +103,32 @@ public class CarritoServlet extends HttpServlet {
         if (carrito == null || carrito.isEmpty()) {
             out.println("<p style='background:white;padding:20px;border-radius:8px;'>Tu carrito esta vacio. <a href='CatalogoServlet'>Ver productos</a></p>");
         } else {
-            out.println("<table><tr><th>Producto</th><th>Talla</th><th>Color</th><th>Precio</th><th>Cantidad</th><th>Subtotal</th><th></th></tr>");
+            out.println("<table><tr><th>Producto</th><th>Color</th><th>Talla</th><th>Precio</th><th>Cantidad</th><th>Subtotal</th><th></th></tr>");
             double total = 0;
             try {
                 Connection conn = getConnection();
-                for (Map.Entry<Integer, int[]> entry : carrito.entrySet()) {
+                for (Map.Entry<String, int[]> entry : carrito.entrySet()) {
+                    String key = entry.getKey();
+                    String[] parts = key.split("_");
+                    int prodId = Integer.parseInt(parts[0]);
+                    String talla = parts[1];
+                    int cantidad = entry.getValue()[0];
+
                     PreparedStatement ps = conn.prepareStatement("SELECT * FROM productos WHERE id=?");
-                    ps.setInt(1, entry.getKey());
+                    ps.setInt(1, prodId);
                     ResultSet rs = ps.executeQuery();
                     if (rs.next()) {
                         double precio = rs.getDouble("precio");
-                        int cantidad = entry.getValue()[0];
                         double subtotal = precio * cantidad;
                         total += subtotal;
                         out.println("<tr>");
                         out.println("<td>" + rs.getString("nombre") + "</td>");
-                        out.println("<td>" + rs.getString("talla") + "</td>");
                         out.println("<td>" + rs.getString("color") + "</td>");
+                        out.println("<td>" + talla + "</td>");
                         out.println("<td>S/ " + precio + "</td>");
                         out.println("<td>" + cantidad + "</td>");
                         out.println("<td>S/ " + String.format("%.2f", subtotal) + "</td>");
-                        out.println("<td><a href='CarritoServlet?accion=eliminar&id=" + entry.getKey() + "' class='btn-delete'>Quitar</a></td>");
+                        out.println("<td><a href='CarritoServlet?accion=eliminar&key=" + key + "' class='btn-delete'>Quitar</a></td>");
                         out.println("</tr>");
                     }
                 }

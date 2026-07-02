@@ -117,20 +117,24 @@ public class PagoServlet extends HttpServlet {
             return;
         }
 
-        Map<Integer, int[]> carrito = (Map<Integer, int[]>) session.getAttribute("carrito");
+        Map<String, int[]> carrito = (Map<String, int[]>) session.getAttribute("carrito");
         int usuarioId = (int) session.getAttribute("usuarioId");
 
         try {
             Connection conn = getConnection();
 
+            // Calcular total
             double total = 0;
-            for (Map.Entry<Integer, int[]> entry : carrito.entrySet()) {
+            for (Map.Entry<String, int[]> entry : carrito.entrySet()) {
+                int prodId = Integer.parseInt(entry.getKey().split("_")[0]);
+                int cantidad = entry.getValue()[0];
                 PreparedStatement ps = conn.prepareStatement("SELECT precio FROM productos WHERE id=?");
-                ps.setInt(1, entry.getKey());
+                ps.setInt(1, prodId);
                 ResultSet rs = ps.executeQuery();
-                if (rs.next()) total += rs.getDouble("precio") * entry.getValue()[0];
+                if (rs.next()) total += rs.getDouble("precio") * cantidad;
             }
 
+            // Insertar pedido
             PreparedStatement psPedido = conn.prepareStatement(
                     "INSERT INTO pedidos (usuario_id, total) VALUES (?,?) RETURNING id");
             psPedido.setInt(1, usuarioId);
@@ -139,23 +143,30 @@ public class PagoServlet extends HttpServlet {
             rsPedido.next();
             int pedidoId = rsPedido.getInt("id");
 
-            for (Map.Entry<Integer, int[]> entry : carrito.entrySet()) {
+            // Insertar detalle y actualizar stock
+            for (Map.Entry<String, int[]> entry : carrito.entrySet()) {
+                String[] parts = entry.getKey().split("_");
+                int prodId = Integer.parseInt(parts[0]);
+                String talla = parts[1];
+                int cantidad = entry.getValue()[0];
+
                 PreparedStatement psP = conn.prepareStatement("SELECT precio FROM productos WHERE id=?");
-                psP.setInt(1, entry.getKey());
+                psP.setInt(1, prodId);
                 ResultSet rsP = psP.executeQuery();
                 if (rsP.next()) {
                     PreparedStatement psD = conn.prepareStatement(
                             "INSERT INTO pedido_detalle (pedido_id, producto_id, cantidad, precio_unitario) VALUES (?,?,?,?)");
                     psD.setInt(1, pedidoId);
-                    psD.setInt(2, entry.getKey());
-                    psD.setInt(3, entry.getValue()[0]);
+                    psD.setInt(2, prodId);
+                    psD.setInt(3, cantidad);
                     psD.setDouble(4, rsP.getDouble("precio"));
                     psD.executeUpdate();
 
                     PreparedStatement psStock = conn.prepareStatement(
-                            "UPDATE productos SET stock = stock - ? WHERE id=?");
-                    psStock.setInt(1, entry.getValue()[0]);
-                    psStock.setInt(2, entry.getKey());
+                            "UPDATE producto_tallas SET stock = stock - ? WHERE producto_id=? AND talla=?");
+                    psStock.setInt(1, cantidad);
+                    psStock.setInt(2, prodId);
+                    psStock.setString(3, talla);
                     psStock.executeUpdate();
                 }
             }
@@ -166,7 +177,8 @@ public class PagoServlet extends HttpServlet {
 
         } catch (Exception e) {
             e.printStackTrace();
-            response.sendRedirect("CarritoServlet");
+            response.setContentType("text/html;charset=UTF-8");
+            response.getWriter().println("<p>Error al procesar pago: " + e.getMessage() + "</p>");
         }
     }
 }
